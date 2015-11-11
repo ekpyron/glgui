@@ -76,11 +76,11 @@ public:
         renderer->ResizeViewport (width, height, 200);
 
         text = new glgui::Text ();
-        text->SetWidth (1280/4);
         font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf", 0, 32);
 
-        text->SetContent (*font, U"This is a good test for fonts - and some wiffi words for testing kerning.");
+        text->SetContent (*font, u"This is a good test for fonts - and some wiffi words for testing kerning.");
         text->SetBreakOnWords (true);
+        text->SetWidth (width);
 
         glgui::Box *box = new glgui::Box (guiwindow);
         box->SetSize (200, 200, 200);
@@ -131,6 +131,7 @@ public:
         width = _width; height = _height;
         guiwindow->SetSize (width, height, 200);
         renderer->ResizeViewport (width, height, 200);
+        text->SetWidth (width);
     }
     void run (void) {
         running = true;

@@ -44,7 +44,7 @@ public:
     Text (void);
     ~Text (void);
     void SetWidth (float width);
-    void SetContent (Font &font, const std::u32string &content);
+    void SetContent (Font &font, const std::u16string &content);
     void Render (void);
     void SetBreakOnWords (bool breakOnWords);
     const bool &GetBreakOnWords (void) const {
@@ -52,13 +52,16 @@ public:
     }
 private:
     void Layout (void);
+    void LayoutLine (std::vector<charinfo_t> &charinfos, const std::u16string &line, float starty);
     float width;
-    std::u32string content;
+    std::u16string content;
     Font *font;
     gl::Buffer buffer;
     unsigned int numglyphs;
     bool needlayout;
     TextRenderer renderer;
+    glm::vec2 min_pos;
+    glm::vec2 max_pos;
     bool breakOnWords;
 };
 

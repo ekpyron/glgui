@@ -18,11 +18,9 @@
  */
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <codecvt>
 #include "Text.h"
 #include "Font.h"
 #include "Glyph.h"
-#include <locale>
 
 namespace glgui {
 
@@ -35,7 +33,7 @@ public:
         hb.buf = nullptr;
     }
     ~HarfbuzzBuffer (void) {
-        if (buf != nullptr) hb_buffer_destroy (buf);
+        reset ();
     }
     HarfbuzzBuffer &operator= (const HarfbuzzBuffer&) = delete;
     HarfbuzzBuffer &operator= (HarfbuzzBuffer &&hb) noexcept {
@@ -48,6 +46,7 @@ public:
     operator const hb_buffer_t* (void) const {
         return buf;
     }
+    void reset (void) { if (buf != nullptr) { hb_buffer_destroy (buf); buf = nullptr; } }
 private:
     hb_buffer_t *buf;
 };
@@ -69,14 +68,14 @@ void Text::SetBreakOnWords (bool _breakOnWords) {
     needlayout = true;
 }
 
-void Text::SetContent (Font &_font, const std::u32string &_content) {
+void Text::SetContent (Font &_font, const std::u16string &_content) {
     content = _content;
     font = &_font;
     needlayout = true;
 }
 
-void LineBreak (Font *font, std::vector<std::u32string> &lines, const std::u32string &data, float width, bool wordbreak = false) {
-    std::u32string left = data;
+void LineBreak (Font *font, std::vector<std::u16string> &lines, const std::u16string &data, float width, bool wordbreak = false) {
+    std::u16string left = data;
 
     while (!left.empty ())
     {
@@ -84,7 +83,7 @@ void LineBreak (Font *font, std::vector<std::u32string> &lines, const std::u32st
         hb_buffer_set_direction (buf, HB_DIRECTION_LTR);
         hb_buffer_set_script (buf, HB_SCRIPT_LATIN);
         hb_buffer_set_language (buf, hb_language_get_default ());
-        hb_buffer_add_utf32 (buf, reinterpret_cast<const unsigned int*> (left.data ()), left.size (), 0, left.size ());
+        hb_buffer_add_utf16 (buf, reinterpret_cast<const uint16_t*> (left.data ()), left.size (), 0, left.size ());
 
         hb_shape (font->GetHarfbuzzFont (), buf, nullptr, 0);
 
@@ -95,37 +94,40 @@ void LineBreak (Font *font, std::vector<std::u32string> &lines, const std::u32st
         float x = 0.0f;
         long last_white_space = -1;
 
-        for (auto i = 0; i < glyphcount; i++) {
+        long i = 0;
+        for (i = 0; i < glyphcount; i++) {
             if (U' ' == (left[glyph_infos[i].cluster])) {
-                last_white_space = glyph_infos[i].cluster+1;
+                last_white_space = glyph_infos[i].cluster + 1;
             }
             x += glyph_pos[i].x_advance/64.0f;
-            if (x >= width) {
+            if (i > 0 && x >= width) {
+                buf.reset ();
                 if (wordbreak && last_white_space >= 0) {
-                    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
                     lines.push_back (left.substr (0, last_white_space));
+                    buf.reset ();
                     left.erase (0, last_white_space);
                 } else {
-                    lines.push_back (left.substr (0, glyph_infos[i-1].cluster));
-                    left.erase (0, glyph_infos[i-1].cluster);
+                    lines.push_back (left.substr (0, glyph_infos[i].cluster));
+                    buf.reset ();
+                    left.erase (0, glyph_infos[i].cluster);
                 }
                 break;
             }
         }
-        if (left.size () == glyphcount) {
+        if (i == glyphcount) {
             lines.push_back (left);
-            break;
+            return;
         }
     }
 }
 
-void LayoutLine (Font *font, std::vector<charinfo_t> &charinfos, const std::u32string &line, float starty) {
+void Text::LayoutLine (std::vector<charinfo_t> &charinfos, const std::u16string &line, float starty) {
     unsigned int glyphcount = 0;
     HarfbuzzBuffer buf;
     hb_buffer_set_direction (buf, HB_DIRECTION_LTR);
     hb_buffer_set_script (buf, HB_SCRIPT_LATIN);
     hb_buffer_set_language (buf, hb_language_get_default ());
-    hb_buffer_add_utf32 (buf, reinterpret_cast<const unsigned int*> (line.data ()), line.size (), 0, line.size ());
+    hb_buffer_add_utf16 (buf, reinterpret_cast<const uint16_t*> (line.data ()), line.size (), 0, line.size ());
     hb_shape (font->GetHarfbuzzFont (), buf, nullptr, 0);
     hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions (buf, &glyphcount);
     hb_glyph_info_t *glyph_infos = hb_buffer_get_glyph_infos (buf, &glyphcount);
@@ -158,25 +160,35 @@ void LayoutLine (Font *font, std::vector<charinfo_t> &charinfos, const std::u32s
                                      pos.y + size * glyph->GetExtents ().min_y,
                                      size * (glyph->GetExtents ().max_x - glyph->GetExtents ().min_x),
                                      size * (glyph->GetExtents ().max_y - glyph->GetExtents ().min_y));
+        {
+            glm::vec2 current_min_pos (info.vPositions.x, info.vPositions.y);
+            glm::vec2 current_max_pos = current_min_pos + glm::vec2 (info.vPositions.z, info.vPositions.w);
+            min_pos = glm::min (min_pos, current_min_pos);
+            min_pos = glm::min (min_pos, current_max_pos);
+            max_pos = glm::max (max_pos, current_min_pos);
+            max_pos = glm::max (max_pos, current_max_pos);
+        }
     }
 }
 
 void Text::Layout (void) {
-    std::vector<std::u32string> lines;
+    std::vector<std::u16string> lines;
     {
         std::streampos start = 0;
         while (true) {
             auto pos = content.find_first_of (U'\n', start);
             LineBreak (font, lines, content.substr (start, pos), width, breakOnWords);
-            if (pos == std::u32string::npos) {
+            if (pos == std::u16string::npos) {
                 break;
             }
             start = pos + 1;
         }
     }
     std::vector<charinfo_t> charinfos;
+    min_pos = glm::vec2 (std::numeric_limits<float>::max (), std::numeric_limits<float>::max ());
+    max_pos = glm::vec2 (-std::numeric_limits<float>::max (), -std::numeric_limits<float>::max ());
     for (int line = 0; line < lines.size (); line++) {
-        LayoutLine (font, charinfos, lines[line], -font->GetSize () * line);
+        LayoutLine (charinfos, lines[line], -font->GetSize () * line);
     }
     buffer = gl::Buffer ();
     buffer.Storage (sizeof (charinfo_t) * charinfos.size (), charinfos.data (), 0);
@@ -196,7 +208,7 @@ void Text::Render (void) {
 
     renderer.GetAtlas ().GetTex ().Bind (0);
 
-    renderer.SetMatrix (glm::translate (glm::ortho (0.0f, 1280.0f, 0.0f, 720.0f, -100.0f, 100.0f), glm::vec3 (0, 360, 0)));
+    renderer.SetMatrix (glm::translate (glm::ortho (0.0f, width, 0.0f, 720.0f, -100.0f, 100.0f), glm::vec3 (0, 360, 0)));
 
     gl::Enable (GL_BLEND);
     gl::BlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
