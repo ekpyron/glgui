@@ -80,6 +80,7 @@ public:
         font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf", 0, 32);
 
         text->SetContent (*font, U"This is a good test for fonts - and some wiffi words for testing kerning.");
+        text->SetBreakOnWords (true);
 
         glgui::Box *box = new glgui::Box (guiwindow);
         box->SetSize (200, 200, 200);

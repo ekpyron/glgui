@@ -19,9 +19,11 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <hb-icu.h>
+#include <codecvt>
 #include "Text.h"
 #include "Font.h"
 #include "Glyph.h"
+#include <locale>
 
 namespace glgui {
 
@@ -51,7 +53,7 @@ private:
     hb_buffer_t *buf;
 };
 
-Text::Text (void) : width (0.0f) {
+Text::Text (void) : width (0.0f), font (nullptr), breakOnWords (false), needlayout (true) {
 
 }
 
@@ -60,78 +62,133 @@ Text::~Text (void) {
 
 void Text::SetWidth (float _width) {
     width = _width;
-    Layout ();
+    needlayout = true;
 }
 
-void Text::SetContent (Font &font, const std::u32string &content) {
-    HarfbuzzBuffer buf;
+void Text::SetBreakOnWords (bool _breakOnWords) {
+    breakOnWords = _breakOnWords;
+    needlayout = true;
+}
+
+void Text::SetContent (Font &_font, const std::u32string &_content) {
+    content = _content;
+    font = &_font;
+    needlayout = true;
+}
+
+void LineBreak (Font *font, std::vector<std::u32string> &lines, const std::u32string &data, float width, bool wordbreak = false) {
+    std::u32string left = data;
+
+    while (!left.empty ())
+    {
+        HarfbuzzBuffer buf;
+        hb_buffer_set_direction (buf, HB_DIRECTION_LTR);
+        hb_buffer_set_script (buf, HB_SCRIPT_LATIN);
+        hb_buffer_set_language (buf, hb_language_get_default ());
+        hb_buffer_add_utf32 (buf, reinterpret_cast<const unsigned int*> (left.data ()), left.size (), 0, left.size ());
+
+        hb_shape (font->GetHarfbuzzFont (), buf, nullptr, 0);
+
+        unsigned int glyphcount = 0;
+        hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions (buf, &glyphcount);
+        hb_glyph_info_t *glyph_infos = hb_buffer_get_glyph_infos (buf, &glyphcount);
+
+        float x = 0.0f;
+        long last_white_space = -1;
+
+        for (auto i = 0; i < glyphcount; i++) {
+            if (U' ' == (left[glyph_infos[i].cluster])) {
+                last_white_space = glyph_infos[i].cluster+1;
+            }
+            x += glyph_pos[i].x_advance/64.0f;
+            if (x >= width) {
+                if (wordbreak && last_white_space >= 0) {
+                    std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
+                    lines.push_back (left.substr (0, last_white_space));
+                    left.erase (0, last_white_space);
+                } else {
+                    lines.push_back (left.substr (0, glyph_infos[i-1].cluster));
+                    left.erase (0, glyph_infos[i-1].cluster);
+                }
+                break;
+            }
+        }
+        if (left.size () == glyphcount) {
+            lines.push_back (left);
+            break;
+        }
+    }
+}
+
+void LayoutLine (Font *font, std::vector<charinfo_t> &charinfos, const std::u32string &line, float starty) {
     unsigned int glyphcount = 0;
+    HarfbuzzBuffer buf;
     hb_buffer_set_direction (buf, HB_DIRECTION_LTR);
     hb_buffer_set_script (buf, HB_SCRIPT_LATIN);
     hb_buffer_set_language (buf, hb_language_get_default ());
-    hb_buffer_add_utf32 (buf, reinterpret_cast<const unsigned int*> (content.data ()), content.size (), 0, content.size ());
-    hb_shape (font.GetHarfbuzzFont (), buf, nullptr, 0);
+    hb_buffer_add_utf32 (buf, reinterpret_cast<const unsigned int*> (line.data ()), line.size (), 0, line.size ());
+    hb_shape (font->GetHarfbuzzFont (), buf, nullptr, 0);
     hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions (buf, &glyphcount);
     hb_glyph_info_t *glyph_infos = hb_buffer_get_glyph_infos (buf, &glyphcount);
+
     float x = 0.0f;
-    float y = 0.0f;
-    glyphs.clear ();
-    glyphs.reserve (glyphcount);
+    float y = starty;
+
+    typedef struct glyphinfo {
+        Glyph *glyph;
+        glm::vec2 pos;
+    } glyphinfo_t;
+
     for (auto i = 0; i < glyphcount; i++) {
-        glyphs.emplace_back ();
-        glyphinfo_t &info = glyphs.back ();
-        info.glyph = font.LookupGlyph (glyph_infos[i].codepoint);
-        info.pos = glm::vec2 (x + (glyph_pos[i].x_offset/64.0f), y - (glyph_pos[i].y_offset/64.0f));
+        glm::vec2 pos = glm::vec2 (x + (glyph_pos[i].x_offset/64.0f), y - (glyph_pos[i].y_offset/64.0f));
+        Glyph *glyph = font->LookupGlyph (glyph_infos[i].codepoint);
+        const int &size = glyph->GetPixelSize ();
         x += glyph_pos[i].x_advance/64.0f;
         y -= glyph_pos[i].y_advance/64.0f;
-    }
-    Layout ();
-}
-
-void Text::Layout (void) {
-    std::vector<charinfo_t> charinfos;
-    charinfos.resize (glyphs.size ());
-    float linestart_x = 0.0f;
-    int line = 0;
-    int last_white_space = -1;
-
-    int current = 0;
-    while (current < glyphs.size ()) {
-        Glyph *glyph = glyphs[current].glyph;
-        glm::vec2 &pos = glyphs[current].pos;
-        const int &size = glyph->GetPixelSize ();
 
         if (glyph->IsEmpty ()) {
-            current++;
-            last_white_space = current;
             continue;
         }
 
-        charinfos[current].vInfo = glm::ivec3 (glyph->GetBufferOffset (), glyph->GetNominalWidth (), glyph->GetNominalHeight ());
-        charinfos[current].vColor = glm::vec4 (1, 1, 1, 1);
-        charinfos[current].vPositions = glm::vec4 (pos.x - linestart_x + size * glyph->GetExtents ().min_x,
-                                                   -line * 32 + pos.y + size * glyph->GetExtents ().min_y,
-                                                   size * (glyph->GetExtents ().max_x - glyph->GetExtents ().min_x),
-                                                   size * (glyph->GetExtents ().max_y - glyph->GetExtents ().min_y));
-        if (charinfos[current].vPositions.x + charinfos[current].vPositions.z > width) {
-            if (last_white_space >= 0) {
-                current = last_white_space;
+        charinfos.emplace_back ();
+        charinfo_t &info = charinfos.back ();
+
+        info.vInfo = glm::ivec3 (glyph->GetBufferOffset (), glyph->GetNominalWidth (), glyph->GetNominalHeight ());
+        info.vColor = glm::vec4 (1, 1, 1, 1);
+        info.vPositions = glm::vec4 (pos.x + size * glyph->GetExtents ().min_x,
+                                     pos.y + size * glyph->GetExtents ().min_y,
+                                     size * (glyph->GetExtents ().max_x - glyph->GetExtents ().min_x),
+                                     size * (glyph->GetExtents ().max_y - glyph->GetExtents ().min_y));
+    }
+}
+
+void Text::Layout (void) {
+    std::vector<std::u32string> lines;
+    {
+        std::streampos start = 0;
+        while (true) {
+            auto pos = content.find_first_of (U'\n', start);
+            LineBreak (font, lines, content.substr (start, pos), width, breakOnWords);
+            if (pos == std::u32string::npos) {
+                break;
             }
-
-            linestart_x += charinfos[current].vPositions.x;
-            line++;
-            charinfos[current].vPositions.x = 0;
-            charinfos[current].vPositions.y -= 32;
-            last_white_space = -1;
+            start = pos + 1;
         }
-
-        current++;
+    }
+    std::vector<charinfo_t> charinfos;
+    for (int line = 0; line < lines.size (); line++) {
+        LayoutLine (font, charinfos, lines[line], -font->GetSize () * line);
     }
     buffer = gl::Buffer ();
     buffer.Storage (sizeof (charinfo_t) * charinfos.size (), charinfos.data (), 0);
+    numglyphs = charinfos.size ();
 }
 
 void Text::Render (void) {
+    if (needlayout) {
+        Layout ();
+        needlayout = false;
+    }
     renderer.GetVertexArray ().VertexBuffer (1, buffer, 0, sizeof (charinfo_t));
     renderer.GetVertexArray ().BindingDivisor (1, 1);
     renderer.GetVertexArray ().Bind ();
@@ -146,7 +203,7 @@ void Text::Render (void) {
     gl::BlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     gl::BlendEquation (GL_FUNC_ADD);
 
-    gl::DrawArraysInstanced (GL_TRIANGLE_STRIP, 0, 4, glyphs.size ());
+    gl::DrawArraysInstanced (GL_TRIANGLE_STRIP, 0, 4, numglyphs);
 
     gl::BindVertexArray (0);
     gl::Disable (GL_BLEND);

@@ -46,16 +46,20 @@ public:
     void SetWidth (float width);
     void SetContent (Font &font, const std::u32string &content);
     void Render (void);
+    void SetBreakOnWords (bool breakOnWords);
+    const bool &GetBreakOnWords (void) const {
+        return breakOnWords;
+    }
 private:
     void Layout (void);
     float width;
-    typedef struct glyphinfo {
-        Glyph *glyph;
-        glm::vec2 pos;
-    } glyphinfo_t;
-    std::vector<glyphinfo_t> glyphs;
+    std::u32string content;
+    Font *font;
     gl::Buffer buffer;
+    unsigned int numglyphs;
+    bool needlayout;
     TextRenderer renderer;
+    bool breakOnWords;
 };
 
 } /* namespace glgui */
