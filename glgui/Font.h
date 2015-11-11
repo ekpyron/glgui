@@ -29,8 +29,13 @@
 #include FT_FREETYPE_H
 #include <atomic>
 #include <harfbuzz/hb.h>
+#include <memory>
+#include <map>
+#include "TextRenderer.h"
 
 namespace glgui {
+
+class Glyph;
 
 class FTLib {
 public:
@@ -72,16 +77,41 @@ private:
 
 class Font {
 public:
-    Font (const std::string &filename, int index = 0);
-    Font (std::istream &stream, int index = 0);
+    Font (const std::string &filename, int index = 0, int size = 32);
+    Font (std::istream &stream, int index = 0, int size = 32);
     ~Font (void);
+    const hb_font_t *GetHarfbuzzFont (void) const {
+        return hbfont;
+    }
+    hb_font_t *GetHarfbuzzFont (void) {
+        return hbfont;
+    }
+    const FT_Face &GetFace (void) const {
+        return face;
+    }
+    FT_Face &GetFace (void) {
+        return face;
+    }
+    Atlas &GetAtlas (void) {
+        return renderer.GetAtlas ();
+    }
+    const int &GetSize (void) {
+        return size;
+    }
+    Glyph *LookupGlyph (int index);
+    glyphy_arc_accumulator_t *GetArcAccumulator (void) {
+        return renderer.GetArcAccumulator ();
+    }
 private:
     void Load (std::istream &stream, int index = 0);
     std::vector<FT_Byte> data;
+    std::map<int, std::unique_ptr<Glyph>> glyphs;
     FTLib ftlib;
     FT_Face face;
     hb_font_t *hbfont;
     hb_face_t *hbface;
+    const int size;
+    TextRenderer renderer;
 };
 
 } /* namespace glgui */

@@ -17,26 +17,27 @@
  * along with GLGUI.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GL3Atlas.h"
+#include "Atlas.h"
 
 namespace glgui {
 
-GL3Atlas::GL3Atlas (void) : size (4096), cursor (0), texture (GL_TEXTURE_BUFFER) {
-    buffer.Data (size * 4, nullptr, GL_STATIC_DRAW);
+Atlas::Atlas (void) : size (4096), cursor (0), texture (GL_TEXTURE_BUFFER) {
+    buffer.Storage (size * 4, nullptr,  GL_DYNAMIC_STORAGE_BIT);
     texture.Buffer (GL_RGBA8, buffer);
 }
 
-GL3Atlas::~GL3Atlas (void) {
+Atlas::~Atlas (void) {
 }
 
-unsigned int GL3Atlas::alloc (void *data, unsigned int len)
+unsigned int Atlas::alloc (void *data, unsigned int len)
 {
     if (cursor + len >= size) {
         gl::Buffer newbuffer;
         size = std::max (cursor + len, size * 2);
-        newbuffer.Data (size * 4, nullptr, GL_STATIC_DRAW);
+        newbuffer.Storage (size * 4, nullptr,  GL_DYNAMIC_STORAGE_BIT);
         gl::Buffer::CopySubData (buffer, newbuffer, 0, 0, cursor * 4);
         buffer = std::move (newbuffer);
+        texture = gl::Texture (GL_TEXTURE_BUFFER);
         texture.Buffer (GL_RGBA8, buffer);
     }
     unsigned int pos = cursor;

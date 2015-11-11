@@ -21,16 +21,41 @@
 #define GLGUI_TEXT_H
 
 #include <string>
+#include <harfbuzz/hb.h>
+#include <vector>
+#include <glm/glm.hpp>
+#include <oglp/oglp.h>
+#include "TextRenderer.h"
 
 namespace glgui {
+
+class Font;
+class Glyph;
+
+typedef struct charinfo {
+    glm::vec4 vPositions;
+    glm::vec4 vColor;
+    glm::ivec3 vInfo;
+    int padding;
+} charinfo_t;
 
 class Text {
 public:
     Text (void);
     ~Text (void);
-    void SetWidth (float pixelwidth);
-    void SetContent (const std::string &content);
+    void SetWidth (float width);
+    void SetContent (Font &font, const std::u32string &content);
+    void Render (void);
 private:
+    void Layout (void);
+    float width;
+    typedef struct glyphinfo {
+        Glyph *glyph;
+        glm::vec2 pos;
+    } glyphinfo_t;
+    std::vector<glyphinfo_t> glyphs;
+    gl::Buffer buffer;
+    TextRenderer renderer;
 };
 
 } /* namespace glgui */

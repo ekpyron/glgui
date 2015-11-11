@@ -22,6 +22,7 @@
 #include <glgui/Box.h>
 #include <glgui/renderer_gl3/GL3Renderer.h>
 #include <glgui/Font.h>
+#include <glgui/Text.h>
 
 class Window {
 public:
@@ -74,6 +75,12 @@ public:
         guiwindow = new glgui::Window (width, height, 2048, false);
         renderer->ResizeViewport (width, height, 200);
 
+        text = new glgui::Text ();
+        text->SetWidth (1280/4);
+        font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf", 0, 32);
+
+        text->SetContent (*font, U"This is a good test for fonts - and some wiffi words for testing kerning.");
+
         glgui::Box *box = new glgui::Box (guiwindow);
         box->SetSize (200, 200, 200);
         box->SetPivot (glgui::Widget::TOP|glgui::Widget::RIGHT|glgui::Widget::FRONT);
@@ -93,9 +100,9 @@ public:
 
         glfwGetCursorPos (window, &cursor_x, &cursor_y);
 
-        font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf");
     }
     ~App (void) {
+        delete text;
         delete font;
         delete guiwindow;
         delete renderer;
@@ -107,10 +114,8 @@ public:
             selected->SetX (selected->GetAbsoluteX () + dx, false);
             selected->SetY (selected->GetAbsoluteY () + dy, false);
         }
-
         cursor_x = x;
         cursor_y = y;
-
     }
     void OnMouseButton (int button, int action, int mods) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -136,8 +141,9 @@ public:
             gl::ClearColor (0.1, 0.1, 0.1, 0);
             gl::Clear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-            renderer->Reset ();
-            renderer->Display (guiwindow);
+            /*renderer->Reset ();
+            renderer->Display (guiwindow);*/
+            text->Render ();
 
             glfwSwapBuffers (window);
         }
@@ -146,6 +152,7 @@ private:
     Window window;
     int width;
     int height;
+    glgui::Text *text;
     glgui::Window *guiwindow;
     glgui::GL3Renderer *renderer;
     glgui::Widget *selected;

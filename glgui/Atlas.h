@@ -17,24 +17,33 @@
  * along with GLGUI.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLGUI_GL3TEXTRENDERER_H
-#define GLGUI_GL3TEXTRENDERER_H
+#ifndef GLGUI_ATLAS_H
+#define GLGUI_ATLAS_H
 
-#include <glyphy.h>
-#include "GL3Atlas.h"
+#include <oglp/oglp.h>
 
 namespace glgui {
 
-class GL3TextRenderer {
+class Atlas {
 public:
-    GL3TextRenderer (void);
-    ~GL3TextRenderer (void);
-private:
-    glyphy_arc_accumulator_t *acc;
-    GL3Atlas atlas;
+    Atlas (void);
+    Atlas (const Atlas &) = delete;
+    ~Atlas (void);
+    Atlas &operator= (const Atlas &) = delete;
 
+    unsigned int alloc (void *data, unsigned int len);
+
+    const gl::Texture &GetTex (void) const {
+        return texture;
+    }
+
+private:
+    gl::Texture texture;
+    gl::Buffer buffer;
+    unsigned int cursor;
+    unsigned int size;
 };
 
 } /* namespace glgui */
 
-#endif /* !defined GLGUI_GL3TEXTRENDERER_H */
+#endif /* !defined GLGUI_ATLAS_H */
