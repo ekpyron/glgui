@@ -18,7 +18,6 @@
  */
 
 #include <glm/gtc/matrix_transform.hpp>
-#include <hb-icu.h>
 #include <codecvt>
 #include "Text.h"
 #include "Font.h"
