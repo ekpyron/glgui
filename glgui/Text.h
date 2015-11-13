@@ -53,6 +53,8 @@ public:
     const bool &GetBreakOnWords (void) const {
         return breakOnWords;
     }
+    const glm::vec2 &GetMinPos (void);
+    const glm::vec2 &GetMaxPos (void);
 private:
     void Layout (void);
     void LayoutLine (std::vector<charinfo_t> &charinfos, const std::string &line, float starty);

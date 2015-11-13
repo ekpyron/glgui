@@ -214,6 +214,21 @@ void Text::Layout (void) {
     numglyphs = charinfos.size ();
 }
 
+const glm::vec2 &Text::GetMinPos (void) {
+    if (needlayout) {
+        Layout ();
+        needlayout = false;
+    }
+    return min_pos;
+}
+const glm::vec2 &Text::GetMaxPos (void) {
+    if (needlayout) {
+        Layout ();
+        needlayout = false;
+    }
+    return max_pos;
+}
+
 void Text::Render (void) {
     if (needlayout) {
         Layout ();

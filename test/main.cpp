@@ -135,6 +135,9 @@ public:
         guiwindow->SetSize (width, height, 200);
         renderer->ResizeViewport (width, height, 200);
         text->SetWidth (width);
+        glm::vec2 minpos = text->GetMinPos ();
+        glm::vec2 maxpos = text->GetMaxPos ();
+        text->SetMatrix (glm::ortho (maxpos.x - width, maxpos.x, maxpos.y - height, maxpos.y, -100.0f, 100.0f));
     }
     void run (void) {
         running = true;
@@ -151,6 +154,9 @@ public:
                     framecount = 0;
                     std::cout << stream.str () << std::endl;
                     text->SetContent (*font, stream.str ());
+                    glm::vec2 minpos = text->GetMinPos ();
+                    glm::vec2 maxpos = text->GetMaxPos ();
+                    text->SetMatrix (glm::ortho (maxpos.x - width, maxpos.x, maxpos.y - height, maxpos.y, -100.0f, 100.0f));
                 }
             }
             framecount++;
@@ -160,8 +166,8 @@ public:
             gl::ClearColor (0.1, 0.1, 0.1, 0);
             gl::Clear (GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-            /*renderer->Reset ();
-            renderer->Display (guiwindow);*/
+            renderer->Reset ();
+            renderer->Display (guiwindow);
             text->Render ();
 
             glfwSwapBuffers (window);
