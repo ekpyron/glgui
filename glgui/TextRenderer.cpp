@@ -43,6 +43,8 @@ TextRenderer::TextRenderer (void) :acc (glyphy_arc_accumulator_create ()) {
 
     program["sdftex"] = GLint (0);
 
+    gl::UniformBlockBinding (program.get (), gl::GetUniformBlockIndex (program.get (), "Uniforms"), 0);
+
     contrast = gl::SmartUniform<float> (program["contrast"], 1.0f);
     boldness = gl::SmartUniform<float> (program["boldness"], 0.0f);
     matrix = gl::SmartUniform<glm::mat4> (program["mat"], glm::mat4 (1));
@@ -59,13 +61,9 @@ TextRenderer::TextRenderer (void) :acc (glyphy_arc_accumulator_create ()) {
     vao.AttribBinding (1, 1);
     vao.EnableAttrib (1);
 
-    vao.AttribFormat (2, 4, GL_FLOAT, GL_FALSE, offsetof (charinfo_t, vColor));
+    vao.AttribIFormat (2, 3, GL_INT, offsetof (charinfo_t, vInfo));
     vao.AttribBinding (2, 1);
     vao.EnableAttrib (2);
-
-    vao.AttribIFormat (3, 3, GL_INT, offsetof (charinfo_t, vInfo));
-    vao.AttribBinding (3, 1);
-    vao.EnableAttrib (3);
 
     vao.BindingDivisor (1, 1);
 }

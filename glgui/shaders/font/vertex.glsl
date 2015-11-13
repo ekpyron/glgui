@@ -2,8 +2,7 @@
 
 layout (location = 0) in ivec2 vCorner;
 layout (location = 1) in vec4 vPositions;
-layout (location = 2) in vec4 vColor;
-layout (location = 3) in ivec3 vInfo;
+layout (location = 2) in ivec3 vInfo;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -12,9 +11,13 @@ out gl_PerVertex {
 flat out ivec2 fNominalSize;
 out vec2 fCoord;
 flat out int fBufferOffset;
-out vec4 fColor;
 
-uniform mat4 mat;
+layout (std140) uniform Uniforms {
+    mat4 mat;
+    vec4 color;
+    float contrast;
+    float boldness;
+};
 
 void main (void)
 {
@@ -22,5 +25,4 @@ void main (void)
 	fNominalSize = vInfo.yz;
 	fBufferOffset = vInfo.x;
 	fCoord = vec2 (vCorner * vInfo.yz);
-	fColor = vColor;
 }

@@ -23,6 +23,7 @@
 #include <glgui/renderer_gl3/GL3Renderer.h>
 #include <glgui/Font.h>
 #include <glgui/Text.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 class Window {
 public:
@@ -77,8 +78,10 @@ public:
 
         text = new glgui::Text ();
         font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf", 0, 32);
+        text->SetMatrix (glm::ortho (0.0f, 1280.0f, 0.0f, 720.0f, -100.0f, 100.0f));
+        text->SetBoldness (0.0f);
 
-        text->SetContent (*font, u"This is a good test for fonts - and some wiffi words for testing kerning.");
+        text->SetContent (*font, "FPS: ?");
         text->SetBreakOnWords (true);
         text->SetWidth (width);
 
@@ -135,8 +138,22 @@ public:
     }
     void run (void) {
         running = true;
+        unsigned int framecount = 0;
+        double last_time = glfwGetTime ();
         while (running) {
             glfwPollEvents ();
+
+            if (glfwGetTime () - last_time > 1.0) {
+                last_time = glfwGetTime ();
+                {
+                    std::stringstream stream;
+                    stream << "FPS: " << framecount;
+                    framecount = 0;
+                    std::cout << stream.str () << std::endl;
+                    text->SetContent (*font, stream.str ());
+                }
+            }
+            framecount++;
 
             gl::Viewport (0, 0, width, height);
 

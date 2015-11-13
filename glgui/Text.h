@@ -34,7 +34,6 @@ class Glyph;
 
 typedef struct charinfo {
     glm::vec4 vPositions;
-    glm::vec4 vColor;
     glm::ivec3 vInfo;
     int padding;
 } charinfo_t;
@@ -44,19 +43,31 @@ public:
     Text (void);
     ~Text (void);
     void SetWidth (float width);
-    void SetContent (Font &font, const std::u16string &content);
+    void SetContent (Font &font, const std::string &content);
     void Render (void);
     void SetBreakOnWords (bool breakOnWords);
+    void SetMatrix (const glm::mat4 &mat);
+    void SetContrast (float contrast);
+    void SetBoldness (float boldness);
+    void SetColor (const glm::vec4 &color);
     const bool &GetBreakOnWords (void) const {
         return breakOnWords;
     }
 private:
     void Layout (void);
-    void LayoutLine (std::vector<charinfo_t> &charinfos, const std::u16string &line, float starty);
+    void LayoutLine (std::vector<charinfo_t> &charinfos, const std::string &line, float starty);
     float width;
-    std::u16string content;
+    std::string content;
     Font *font;
     gl::Buffer buffer;
+    gl::Buffer uniforms;
+    typedef struct uniformdata {
+        glm::mat4 mat;
+        glm::vec4 color;
+        float contrast;
+        float boldness;
+        float padding[2];
+    } uniformdata_t;
     unsigned int numglyphs;
     bool needlayout;
     TextRenderer renderer;

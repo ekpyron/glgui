@@ -18,6 +18,7 @@
  */
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "Text.h"
 #include "Font.h"
 #include "Glyph.h"
@@ -52,7 +53,10 @@ private:
 };
 
 Text::Text (void) : width (0.0f), font (nullptr), breakOnWords (false), needlayout (true) {
-
+    uniformdata_t uniform_data = {
+            glm::mat4 (1), glm::vec4 (1, 1, 1, 1), 1.0f, 0.0f
+    };
+    uniforms.Storage (sizeof (uniformdata_t), &uniform_data, GL_DYNAMIC_STORAGE_BIT);
 }
 
 Text::~Text (void) {
@@ -68,14 +72,26 @@ void Text::SetBreakOnWords (bool _breakOnWords) {
     needlayout = true;
 }
 
-void Text::SetContent (Font &_font, const std::u16string &_content) {
+void Text::SetContent (Font &_font, const std::string &_content) {
     content = _content;
     font = &_font;
     needlayout = true;
 }
 
-void LineBreak (Font *font, std::vector<std::u16string> &lines, const std::u16string &data, float width, bool wordbreak = false) {
-    std::u16string left = data;
+void Text::SetBoldness (float boldness) {
+    uniforms.SubData (offsetof (uniformdata_t, boldness), sizeof (float), &boldness);
+}
+
+void Text::SetContrast (float contrast) {
+    uniforms.SubData (offsetof (uniformdata_t, contrast), sizeof (float), &contrast);
+}
+
+void Text::SetColor (const glm::vec4 &color) {
+    uniforms.SubData (offsetof (uniformdata_t, color), sizeof (glm::vec4), glm::value_ptr (color));
+}
+
+void LineBreak (Font *font, std::vector<std::string> &lines, const std::string &data, float width, bool wordbreak = false) {
+    std::string left = data;
 
     while (!left.empty ())
     {
@@ -83,7 +99,7 @@ void LineBreak (Font *font, std::vector<std::u16string> &lines, const std::u16st
         hb_buffer_set_direction (buf, HB_DIRECTION_LTR);
         hb_buffer_set_script (buf, HB_SCRIPT_LATIN);
         hb_buffer_set_language (buf, hb_language_get_default ());
-        hb_buffer_add_utf16 (buf, reinterpret_cast<const uint16_t*> (left.data ()), left.size (), 0, left.size ());
+        hb_buffer_add_utf8 (buf, left.data (), left.size (), 0, -1);
 
         hb_shape (font->GetHarfbuzzFont (), buf, nullptr, 0);
 
@@ -121,13 +137,17 @@ void LineBreak (Font *font, std::vector<std::u16string> &lines, const std::u16st
     }
 }
 
-void Text::LayoutLine (std::vector<charinfo_t> &charinfos, const std::u16string &line, float starty) {
+void Text::SetMatrix (const glm::mat4 &mat) {
+    uniforms.SubData (offsetof (uniformdata_t, mat), sizeof (glm::mat4), glm::value_ptr (mat));
+}
+
+void Text::LayoutLine (std::vector<charinfo_t> &charinfos, const std::string &line, float starty) {
     unsigned int glyphcount = 0;
     HarfbuzzBuffer buf;
     hb_buffer_set_direction (buf, HB_DIRECTION_LTR);
     hb_buffer_set_script (buf, HB_SCRIPT_LATIN);
     hb_buffer_set_language (buf, hb_language_get_default ());
-    hb_buffer_add_utf16 (buf, reinterpret_cast<const uint16_t*> (line.data ()), line.size (), 0, line.size ());
+    hb_buffer_add_utf8 (buf, line.data (), line.size (), 0, -1);
     hb_shape (font->GetHarfbuzzFont (), buf, nullptr, 0);
     hb_glyph_position_t *glyph_pos = hb_buffer_get_glyph_positions (buf, &glyphcount);
     hb_glyph_info_t *glyph_infos = hb_buffer_get_glyph_infos (buf, &glyphcount);
@@ -155,7 +175,6 @@ void Text::LayoutLine (std::vector<charinfo_t> &charinfos, const std::u16string 
         charinfo_t &info = charinfos.back ();
 
         info.vInfo = glm::ivec3 (glyph->GetBufferOffset (), glyph->GetNominalWidth (), glyph->GetNominalHeight ());
-        info.vColor = glm::vec4 (1, 1, 1, 1);
         info.vPositions = glm::vec4 (pos.x + size * glyph->GetExtents ().min_x,
                                      pos.y + size * glyph->GetExtents ().min_y,
                                      size * (glyph->GetExtents ().max_x - glyph->GetExtents ().min_x),
@@ -172,13 +191,13 @@ void Text::LayoutLine (std::vector<charinfo_t> &charinfos, const std::u16string 
 }
 
 void Text::Layout (void) {
-    std::vector<std::u16string> lines;
+    std::vector<std::string> lines;
     {
         std::streampos start = 0;
         while (true) {
             auto pos = content.find_first_of (U'\n', start);
             LineBreak (font, lines, content.substr (start, pos), width, breakOnWords);
-            if (pos == std::u16string::npos) {
+            if (pos == std::string::npos) {
                 break;
             }
             start = pos + 1;
@@ -208,7 +227,9 @@ void Text::Render (void) {
 
     renderer.GetAtlas ().GetTex ().Bind (0);
 
-    renderer.SetMatrix (glm::translate (glm::ortho (0.0f, width, 0.0f, 720.0f, -100.0f, 100.0f), glm::vec3 (0, 360, 0)));
+    float w = max_pos.x - min_pos.x;
+
+    uniforms.BindBase (GL_UNIFORM_BUFFER, 0);
 
     gl::Enable (GL_BLEND);
     gl::BlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
