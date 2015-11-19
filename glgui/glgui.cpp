@@ -23,6 +23,7 @@
 namespace glgui {
 
 void Init (oglp::GetProcAddressCallback getprocaddress) {
+    oglp::Init (getprocaddress);
     glutil::Init (getprocaddress);
 }
 

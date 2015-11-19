@@ -18,6 +18,6 @@ add_library (glgui STATIC ${GLGUI_SOURCES})
 
 message ("Lib: ${GLUTIL_LIBRARIES}")
 
-target_link_libraries (glgui glgui_renderer_gl3 ${FREETYPE_LIBRARIES} ${HARFBUZZ_LIBRARIES} ${GLUTIL_LIBRARIES})
+target_link_libraries (glgui glgui_renderer_gl3 ${FREETYPE_LIBRARIES} ${HARFBUZZ_LIBRARIES} ${GLUTIL_LIBRARIES} ${OGLP_LIBRARIES})
 target_include_directories (glgui SYSTEM PRIVATE ${OGLP_INCLUDE_DIRS} ${GLUTIL_INCLUDE_DIRS})
 target_include_directories (glgui SYSTEM PUBLIC ${FREETYPE_INCLUDE_DIRS} ${HARFBUZZ_INCLUDE_DIRS})
