@@ -52,7 +52,7 @@ private:
     hb_buffer_t *buf;
 };
 
-Text::Text (void) : width (0.0f), font (nullptr), breakOnWords (false), needlayout (true) {
+Text::Text (Widget *parent) : width (0.0f), font (nullptr), breakOnWords (false), needlayout (true), Widget (parent) {
     uniformdata_t uniform_data = {
             glm::mat4 (1), glm::vec4 (1, 1, 1, 1), 1.0f, 0.0f
     };
@@ -229,11 +229,51 @@ const glm::vec2 &Text::GetMaxPos (void) {
     return max_pos;
 }
 
-void Text::Render (void) {
+void Text::SetPivot (unsigned int pivot) {
+    needlayout = true;
+    Widget::SetPivot (pivot);
+}
+
+void Text::Paint (Renderer *_renderer) {
     if (needlayout) {
         Layout ();
         needlayout = false;
     }
+
+    {
+        glm::vec2 x;
+        glm::vec2 y;
+        switch (GetPivot () & LEFT_RIGHT_MASK) {
+            case LEFT:
+                x = glm::vec2 (min_pos.x, min_pos.x + GetAbsoluteWidth ());
+                break;
+            case RIGHT:
+                x = glm::vec2 (max_pos.x - GetAbsoluteWidth (), max_pos.x);
+                break;
+            case CENTER:
+            {
+                float halfwidth = 0.5f * (max_pos.x - min_pos.x);
+                x = glm::vec2 (halfwidth - 0.5f * GetAbsoluteWidth (), halfwidth + 0.5f * GetAbsoluteWidth ());
+                break;
+            }
+        }
+        switch (GetPivot () & BOTTOM_TOP_MASK) {
+            case TOP:
+                y = glm::vec2 (max_pos.y - GetAbsoluteHeight (), max_pos.y);
+                break;
+            case BOTTOM:
+                y = glm::vec2 (min_pos.y, min_pos.y + GetAbsoluteHeight ());
+                break;
+            case CENTER:
+            {
+                float halfheight = 0.5f * (max_pos.y - min_pos.y);
+                y = glm::vec2 (halfheight - 0.5f * GetAbsoluteHeight (), halfheight + 0.5f * GetAbsoluteHeight ());
+                break;
+            }
+        }
+        SetMatrix (GetTransformation () * glm::ortho (x.x, x.y, y.x, y.y));
+    }
+
     renderer.GetVertexArray ().VertexBuffer (1, buffer, 0, sizeof (charinfo_t));
     renderer.GetVertexArray ().BindingDivisor (1, 1);
     renderer.GetVertexArray ().Bind ();

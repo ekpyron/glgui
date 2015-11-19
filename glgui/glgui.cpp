@@ -17,27 +17,13 @@
  * along with GLGUI.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef GLGUI_LOADPROGRAM_H
-#define GLGUI_LOADPROGRAM_H
-
-#include <oglp/oglp.h>
-#include <string>
-#include <initializer_list>
-#include <glgui/shader.h>
+#include <glutil/glutil.h>
+#include "glgui.h"
 
 namespace glgui {
 
-typedef struct shaderdesc {
-    shaderdesc (const std::string &name, const GLenum &type, const shader::source_t &source);
-    shaderdesc (const std::string &name, const GLenum &type, const std::string &source);
-    std::string name;
-    GLenum type;
-    std::string source;
-} shaderdesc_t;
-
-void LoadProgram (gl::Program &program, const std::string &name, const std::string &definitions,
-    const std::initializer_list<shaderdesc_t> &shaders);
+void Init (oglp::GetProcAddressCallback getprocaddress) {
+    glutil::Init (getprocaddress);
+}
 
 } /* namespace glgui */
-
-#endif /* !defined GLGUI_LOADPROGRAM_H */

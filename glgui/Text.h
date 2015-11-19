@@ -26,6 +26,7 @@
 #include <glm/glm.hpp>
 #include <oglp/oglp.h>
 #include "TextRenderer.h"
+#include "Widget.h"
 
 namespace glgui {
 
@@ -38,24 +39,25 @@ typedef struct charinfo {
     int padding;
 } charinfo_t;
 
-class Text {
+class Text : public Widget {
 public:
-    Text (void);
+    Text (Widget *parent = nullptr);
     ~Text (void);
     void SetWidth (float width);
     void SetContent (Font &font, const std::string &content);
-    void Render (void);
     void SetBreakOnWords (bool breakOnWords);
-    void SetMatrix (const glm::mat4 &mat);
     void SetContrast (float contrast);
     void SetBoldness (float boldness);
     void SetColor (const glm::vec4 &color);
+    virtual void SetPivot (unsigned int pivot);
     const bool &GetBreakOnWords (void) const {
         return breakOnWords;
     }
     const glm::vec2 &GetMinPos (void);
     const glm::vec2 &GetMaxPos (void);
+    virtual void Paint (Renderer *renderer);
 private:
+    void SetMatrix (const glm::mat4 &mat);
     void Layout (void);
     void LayoutLine (std::vector<charinfo_t> &charinfos, const std::string &line, float starty);
     float width;

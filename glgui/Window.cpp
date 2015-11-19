@@ -35,7 +35,7 @@ Window::~Window (void) {
 
 glm::mat4 Window::GetTransformation (void) const {
     if (perspective) {
-        return glm::translate (glm::perspective (45.0f, float (width) / float (height), 0.1f, 100.0f), glm::vec3 (0, 0, -1));
+        return glm::translate (glm::infinitePerspective (glm::radians (100.0f), 1.0f, 0.01f), glm::vec3 (0, 0, -1));
     } else {
         return glm::mat4 (1);
     }

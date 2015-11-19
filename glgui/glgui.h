@@ -19,7 +19,20 @@
 #ifndef GLGUI_H
 #define GLGUI_H
 
+#include "Atlas.h"
+#include "Box.h"
+#include "Cube.h"
+#include "Font.h"
+#include "Glyph.h"
+#include "Renderer.h"
+#include "Text.h"
+#include "TextRenderer.h"
+#include "Widget.h"
+#include "Window.h"
+
 namespace glgui {
+
+void Init (oglp::GetProcAddressCallback getprocaddress);
 
 } /* namespace glgui */
 

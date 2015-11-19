@@ -18,11 +18,8 @@
  */
 #include <oglp/oglp.h>
 #include <GLFW/glfw3.h>
-#include <glgui/Window.h>
-#include <glgui/Box.h>
+#include <glgui/glgui.h>
 #include <glgui/renderer_gl3/GL3Renderer.h>
-#include <glgui/Font.h>
-#include <glgui/Text.h>
 #include <glm/gtc/matrix_transform.hpp>
 
 class Window {
@@ -55,7 +52,7 @@ public:
         glfwMakeContextCurrent(window);
         glfwShowWindow (window);
 
-        oglp::Init ((oglp::GetProcAddressCallback)glfwGetProcAddress);
+        glgui::Init ((oglp::GetProcAddressCallback)glfwGetProcAddress);
 
         glfwSetWindowCloseCallback (window, [] (GLFWwindow *window) {
             static_cast<App*> (glfwGetWindowUserPointer (window))->running = false;
@@ -71,28 +68,27 @@ public:
             static_cast<App*> (glfwGetWindowUserPointer (window))->OnMouseMove (x, y);
         });
 
+        guiwindow = new glgui::Window (width, height, 2048, true);
+
         renderer = new glgui::GL3Renderer ();
-
-        guiwindow = new glgui::Window (width, height, 2048, false);
         renderer->ResizeViewport (width, height, 200);
-
-        text = new glgui::Text ();
-        font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf", 0, 32);
-        text->SetMatrix (glm::ortho (0.0f, 1280.0f, 0.0f, 720.0f, -100.0f, 100.0f));
-        text->SetBoldness (0.0f);
-
-        text->SetContent (*font, "FPS: ?");
-        text->SetBreakOnWords (true);
-        text->SetWidth (width);
 
         glgui::Box *box = new glgui::Box (guiwindow);
         box->SetSize (200, 200, 200);
         box->SetPivot (glgui::Widget::TOP|glgui::Widget::RIGHT|glgui::Widget::FRONT);
-        box->SetX (50, false);
         box->SetX (0.5, true);
         box->SetY (50, false);
         box->SetZ (0.5, true);
         box->SetColor (1, 0, 0, 0.5);
+
+        fpstext = new glgui::Text (box);
+        font = new glgui::Font ("/usr/share/fonts/TTF/DejaVuSans.ttf", 0, 32);
+
+        fpstext->SetPivot (glgui::Widget::LEFT | glgui::Widget::TOP);
+        fpstext->SetContent (*font, "FPS: ?");
+        fpstext->SetBreakOnWords (true);
+        fpstext->SetWidth (width);
+
 
         box = new glgui::Box (box);
         box->SetSize (200, 200, 100);
@@ -106,7 +102,6 @@ public:
 
     }
     ~App (void) {
-        delete text;
         delete font;
         delete guiwindow;
         delete renderer;
@@ -134,10 +129,9 @@ public:
         width = _width; height = _height;
         guiwindow->SetSize (width, height, 200);
         renderer->ResizeViewport (width, height, 200);
-        text->SetWidth (width);
-        glm::vec2 minpos = text->GetMinPos ();
-        glm::vec2 maxpos = text->GetMaxPos ();
-        text->SetMatrix (glm::ortho (maxpos.x - width, maxpos.x, maxpos.y - height, maxpos.y, -100.0f, 100.0f));
+        fpstext->SetWidth (width);
+        glm::vec2 minpos = fpstext->GetMinPos ();
+        glm::vec2 maxpos = fpstext->GetMaxPos ();
     }
     void run (void) {
         running = true;
@@ -153,10 +147,7 @@ public:
                     stream << "FPS: " << framecount;
                     framecount = 0;
                     std::cout << stream.str () << std::endl;
-                    text->SetContent (*font, stream.str ());
-                    glm::vec2 minpos = text->GetMinPos ();
-                    glm::vec2 maxpos = text->GetMaxPos ();
-                    text->SetMatrix (glm::ortho (maxpos.x - width, maxpos.x, maxpos.y - height, maxpos.y, -100.0f, 100.0f));
+                    fpstext->SetContent (*font, stream.str ());
                 }
             }
             framecount++;
@@ -168,7 +159,6 @@ public:
 
             renderer->Reset ();
             renderer->Display (guiwindow);
-            text->Render ();
 
             glfwSwapBuffers (window);
         }
@@ -177,8 +167,8 @@ private:
     Window window;
     int width;
     int height;
-    glgui::Text *text;
     glgui::Window *guiwindow;
+    glgui::Text *fpstext;
     glgui::GL3Renderer *renderer;
     glgui::Widget *selected;
     glgui::Font *font;

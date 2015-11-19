@@ -12,7 +12,8 @@ glutil_add_shader ("glgui;shader;font;vertex" ${CMAKE_CURRENT_SOURCE_DIR}/shader
 
 set (GLGUI_SOURCES main.cpp Widget.cpp Widget.h Window.cpp Window.h Box.cpp Box.h Renderer.cpp Renderer.h Text.cpp
         Text.h Font.cpp Font.h Cube.cpp Cube.h Atlas.cpp Atlas.h Glyph.cpp Glyph.h TextRenderer.cpp TextRenderer.h
-        ${CMAKE_CURRENT_BINARY_DIR}/shaders/font/fragment.cpp ${CMAKE_CURRENT_BINARY_DIR}/shaders/font/vertex.cpp)
+        ${CMAKE_CURRENT_BINARY_DIR}/shaders/font/fragment.cpp ${CMAKE_CURRENT_BINARY_DIR}/shaders/font/vertex.cpp
+        glgui.cpp glgui.h)
 add_library (glgui STATIC ${GLGUI_SOURCES})
 
 message ("Lib: ${GLUTIL_LIBRARIES}")

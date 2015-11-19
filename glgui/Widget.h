@@ -51,7 +51,7 @@ public:
     void SetZ (float z, bool relative_z);
     void SetAbsolutePosition (float x, float y, float z);
     void SetRelativePosition (float x, float y, float z);
-    void SetPivot (unsigned int pivot);
+    virtual void SetPivot (unsigned int pivot);
     unsigned int GetPivot (void) const;
     bool IsXRelative (void) const;
     bool IsYRelative (void) const;
