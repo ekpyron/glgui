@@ -17,14 +17,8 @@
  * along with glgui.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glutil/glutil.h>
-#include "glgui.h"
+#include "Mesh.h"
 
 namespace glgui {
-
-void Init (oglp::GetProcAddressCallback getprocaddress) {
-    oglp::Init (getprocaddress);
-    glutil::Init (getprocaddress);
-}
 
 } /* namespace glgui */
