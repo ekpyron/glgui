@@ -21,6 +21,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Text.h"
 #include "Font.h"
+#include "FontImpl.h"
 #include "Glyph.h"
 
 namespace glgui {
@@ -74,7 +75,7 @@ void Text::SetBreakOnWords (bool _breakOnWords) {
 
 void Text::SetContent (Font &_font, const std::string &_content) {
     content = _content;
-    font = &_font;
+    font = _font.GetImpl ();
     needlayout = true;
 }
 
@@ -90,7 +91,7 @@ void Text::SetColor (const glm::vec4 &color) {
     uniforms.SubData (offsetof (uniformdata_t, color), sizeof (glm::vec4), glm::value_ptr (color));
 }
 
-void LineBreak (Font *font, std::vector<std::string> &lines, const std::string &data, float width, bool wordbreak = false) {
+void LineBreak (FontImpl *font, std::vector<std::string> &lines, const std::string &data, float width, bool wordbreak = false) {
     std::string left = data;
 
     while (!left.empty ())

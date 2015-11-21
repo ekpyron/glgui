@@ -21,7 +21,6 @@
 #define GLGUI_TEXT_H
 
 #include <string>
-#include <harfbuzz/hb.h>
 #include <vector>
 #include <glm/glm.hpp>
 #include <oglp/oglp.h>
@@ -31,6 +30,7 @@
 namespace glgui {
 
 class Font;
+class FontImpl;
 class Glyph;
 
 typedef struct charinfo {
@@ -62,7 +62,7 @@ private:
     void LayoutLine (std::vector<charinfo_t> &charinfos, const std::string &line, float starty);
     float width;
     std::string content;
-    Font *font;
+    FontImpl *font;
     gl::Buffer buffer;
     gl::Buffer uniforms;
     typedef struct uniformdata {

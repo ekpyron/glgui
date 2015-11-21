@@ -18,64 +18,20 @@
  */
 
 #include "Font.h"
-#include <fstream>
-#include <harfbuzz/hb-ft.h>
-#include "Glyph.h"
+#include "FontImpl.h"
 
 namespace glgui {
 
-std::atomic_flag FTLib::lock = ATOMIC_FLAG_INIT;
-int FTLib::refcount = 0;
-FT_Library FTLib::library = nullptr;
+Font::Font (const std::string &filename, int index, int size) : impl (new FontImpl (filename, index, size)) {
 
-Font::Font (const std::string &filename, int index, int _size) : size (_size) {
-    std::ifstream stream (filename, std::ios_base::in);
-    Load (stream, index);
 }
 
-Font::Font (std::istream &stream, int index, int _size) : size (_size) {
-    Load (stream, index);
+Font::Font (std::istream &stream, int index, int size) : impl (new FontImpl (stream, index, size)) {
+
 }
 
 Font::~Font (void) {
-    hb_face_destroy (hbface);
-    hb_font_destroy (hbfont);
-    FT_Done_Face (face);
-}
-
-Glyph *Font::LookupGlyph (int index) {
-    auto it = glyphs.find (index);
-    if (it == glyphs.end ()) {
-        it = glyphs.emplace (index, std::make_unique<Glyph> (this, index)).first;
-    }
-    return it->second.get ();
-}
-
-void Font::Load (std::istream &stream, int index) {
-    data.clear ();
-    while (stream) {
-        size_t offset = data.size ();
-        data.resize (offset + 4096);
-        stream.read (reinterpret_cast<char*> (data.data () + offset), 4096);
-        data.resize (offset + stream.gcount ());
-    }
-    data.shrink_to_fit ();
-    if (stream.bad ()) throw std::runtime_error ("Cannot read font stream.");
-    if (FT_New_Memory_Face (ftlib, data.data (), data.size (), index, &face)) {
-        throw std::runtime_error ("Cannot load font.");
-    }
-    FT_Set_Pixel_Sizes (face, size, size);
-    hbfont = hb_ft_font_create (face, nullptr);
-    if (!hbfont) {
-        FT_Done_Face (face);
-        throw std::runtime_error ("Cannot create harfbuzz font.");
-    }
-    hbface = hb_ft_face_create (face, nullptr);
-    if (!hbface) {
-        hb_font_destroy (hbfont);
-        FT_Done_Face (face);
-        throw std::runtime_error ("Cannot create harfbuzz face.");
-    }
+    delete impl;
 }
 
 } /* namespace glgui */

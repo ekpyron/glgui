@@ -17,7 +17,7 @@
  * along with glgui.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Glyph.h"
-#include "Font.h"
+#include "FontImpl.h"
 #include <glyphy.h>
 #include <glyphy-freetype.h>
 
@@ -26,7 +26,7 @@ namespace glgui {
 template<typename T = double>
 constexpr T sqrt2 (void) { return std::sqrt (2.0); }
 
-Glyph::Glyph (Font *font, int index) : pixelsize (font->GetSize ()) {
+Glyph::Glyph (FontImpl *font, int index) : pixelsize (font->GetSize ()) {
     constexpr double tolerance_per_em = 1.0 / 1024.0;
     constexpr double MIN_FONT_SIZE = 10.0;
 

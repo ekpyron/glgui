@@ -22,96 +22,26 @@
 
 #include <string>
 #include <istream>
-#include <limits>
-#include <glm/glm.hpp>
-#include <vector>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <atomic>
-#include <harfbuzz/hb.h>
-#include <memory>
-#include <map>
-#include "TextRenderer.h"
 
 namespace glgui {
 
-class Glyph;
-
-class FTLib {
-public:
-    FTLib (void) {
-        FT_Error err = 0;
-        while (lock.test_and_set (std::memory_order_acquire));
-        if (!refcount) {
-            err = FT_Init_FreeType (&library);
-            if (err == 0) {
-                refcount = 1;
-            }
-        } else {
-            refcount++;
-        }
-        lock.clear (std::memory_order_release);
-        if (err) {
-            throw std::runtime_error ("Could not initialize freetype.");
-        }
-    }
-    FTLib (const FTLib&) = delete;
-    ~FTLib (void) {
-        while (lock.test_and_set (std::memory_order_acquire));
-        if (refcount) refcount--;
-        if (!refcount) FT_Done_FreeType (library);
-        lock.clear (std::memory_order_release);
-    }
-    FTLib &operator= (const FTLib &) = delete;
-    operator const FT_Library () const {
-        return library;
-    }
-    operator FT_Library () {
-        return library;
-    }
-private:
-    static std::atomic_flag lock;
-    static int refcount;
-    static FT_Library library;
-};
+class FontImpl;
 
 class Font {
 public:
     Font (const std::string &filename, int index = 0, int size = 32);
     Font (std::istream &stream, int index = 0, int size = 32);
+    Font (const Font&) = delete;
     ~Font (void);
-    const hb_font_t *GetHarfbuzzFont (void) const {
-        return hbfont;
+    Font &operator= (const Font&) = delete;
+    FontImpl *GetImpl (void) {
+        return impl;
     }
-    hb_font_t *GetHarfbuzzFont (void) {
-        return hbfont;
-    }
-    const FT_Face &GetFace (void) const {
-        return face;
-    }
-    FT_Face &GetFace (void) {
-        return face;
-    }
-    Atlas &GetAtlas (void) {
-        return renderer.GetAtlas ();
-    }
-    const int &GetSize (void) {
-        return size;
-    }
-    Glyph *LookupGlyph (int index);
-    glyphy_arc_accumulator_t *GetArcAccumulator (void) {
-        return renderer.GetArcAccumulator ();
+    const FontImpl *GetImpl (void) const {
+        return impl;
     }
 private:
-    void Load (std::istream &stream, int index = 0);
-    std::vector<FT_Byte> data;
-    std::map<int, std::unique_ptr<Glyph>> glyphs;
-    FTLib ftlib;
-    FT_Face face;
-    hb_font_t *hbfont;
-    hb_face_t *hbface;
-    const int size;
-    TextRenderer renderer;
+    FontImpl *impl;
 };
 
 } /* namespace glgui */

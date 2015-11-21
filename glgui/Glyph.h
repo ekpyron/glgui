@@ -23,11 +23,11 @@
 
 namespace glgui {
 
-class Font;
+class FontImpl;
 
 class Glyph {
 public:
-    Glyph (Font *font, int index);
+    Glyph (FontImpl *font, int index);
     Glyph (const Glyph&) = delete;
     ~Glyph (void);
     Glyph &operator= (const Glyph&) = delete;
