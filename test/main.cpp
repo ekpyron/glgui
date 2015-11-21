@@ -98,6 +98,10 @@ public:
         box->SetZ (0.6, true);
         box->SetPivot (glgui::Widget::TOP|glgui::Widget::RIGHT|glgui::Widget::FRONT);
 
+        {
+            glgui::Mesh mesh ("cube.vf");
+        }
+
         glfwGetCursorPos (window, &cursor_x, &cursor_y);
 
     }
@@ -177,6 +181,16 @@ private:
     double cursor_y;
 };
 
+void print_exception(const std::exception& e, int level =  0)
+{
+    std::cerr << std::string (level, ' ') << "Exception: " << e.what () << std::endl;
+    try {
+        std::rethrow_if_nested (e);
+    } catch(const std::exception& e) {
+        print_exception (e, level+1);
+    } catch(...) {}
+}
+
 int main (int argc, char *argv[])
 {
     if (!glfwInit ()) {
@@ -191,7 +205,7 @@ int main (int argc, char *argv[])
         app.run ();
     } catch (std::exception &e) {
         glfwTerminate ();
-        std::cerr << "Exception: " << e.what () << std::endl;
+        print_exception (e);
         return EXIT_FAILURE;
     }
     glfwTerminate ();

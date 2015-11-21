@@ -24,6 +24,7 @@
 #include "Cube.h"
 #include "Font.h"
 #include "Glyph.h"
+#include "Mesh.h"
 #include "Renderer.h"
 #include "Text.h"
 #include "TextRenderer.h"

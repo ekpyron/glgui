@@ -20,10 +20,21 @@
 #ifndef GLGUI_MESH_H
 #define GLGUI_MESH_H
 
+#include <istream>
+#include <oglp/oglp.h>
+
 namespace glgui {
 
 class Mesh {
-
+public:
+    Mesh (const std::string &filename);
+    Mesh (std::istream &stream);
+    Mesh (const Mesh&) = delete;
+    ~Mesh (void);
+    Mesh &operator= (const Mesh&) = delete;
+private:
+    void Load (std::istream &stream);
+    gl::VertexArray vao;
 };
 
 } /* namespace glgui */
