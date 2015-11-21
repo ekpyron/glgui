@@ -21,8 +21,9 @@
 
 #include <atomic>
 #include <oglp/oglp.h>
-#include <glyphy.h>
 #include "Atlas.h"
+
+struct glyphy_arc_accumulator_t;
 
 namespace glgui {
 namespace detail {
@@ -50,7 +51,7 @@ public:
     void SetBoldness (const float &_boldness) {
         boldness.Set (_boldness);
     }
-    glyphy_arc_accumulator_t *GetArcAccumulator (void) {
+    struct glyphy_arc_accumulator_t *GetArcAccumulator (void) {
         return acc;
     }
 private:
@@ -61,7 +62,7 @@ private:
     gl::VertexArray vao;
     gl::Buffer buffer;
     Atlas atlas;
-    glyphy_arc_accumulator_t *acc;
+    struct glyphy_arc_accumulator_t *acc;
 };
 } /* namespace detail */
 
@@ -91,7 +92,7 @@ public:
     void SetBoldness (const float &boldness) {
         renderer->SetBoldness (boldness);
     }
-    glyphy_arc_accumulator_t *GetArcAccumulator (void) {
+    struct glyphy_arc_accumulator_t *GetArcAccumulator (void) {
         return renderer->GetArcAccumulator ();
     }
 private:

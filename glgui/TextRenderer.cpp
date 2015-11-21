@@ -20,6 +20,7 @@
 #include "Text.h"
 #include <exception>
 #include <glutil/LoadProgram.h>
+#include <glyphy.h>
 
 GLUTIL_IMPORT_SHADER (glgui, shader, font, vertex);
 GLUTIL_IMPORT_SHADER (glgui, shader, font, fragment);
